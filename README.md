@@ -1,163 +1,143 @@
 # VELOCITY
 
-**A 3D Arcade Racing Game for the Browser**
+VELOCITY is a browser-based 3D arcade racing game built with JavaScript and Three.js. It combines a custom low-poly sports car, a closed race circuit, arcade driving physics, a chase camera, and a polished in-game HUD.
 
-VELOCITY is a browser-based 3D racing game developed using JavaScript and Three.js. It features a custom low-poly sports car, a procedurally generated racing circuit, arcade-style vehicle handling and a dynamic third-person camera.
+This project is structured as a complete browser game starter with a modular game architecture and supporting public assets ready for expansion.
 
-The project explores real-time 3D rendering, vehicle movement, interactive game systems and modular game architecture within a browser environment.
+## Highlights
 
----
-
-## Overview
-
-VELOCITY brings together custom 3D geometry, vehicle control systems and real-time rendering to create an interactive racing experience.
-
-The game is built around a closed racing circuit where players can accelerate, brake, steer and drift while navigating the track.
-
-## Features
-
-- **3D Environment:** Custom racing circuit with asphalt surfaces, road boundaries, safety barriers and environmental scenery.
-- **Vehicle Design:** Custom-built low-poly sports car featuring bodywork, cabin, alloy wheels, lighting and aerodynamic details.
-- **Vehicle Physics:** Arcade-style acceleration, braking, reverse movement, steering, tire grip and speed regulation.
-- **Drifting System:** Handbrake-based handling with reduced lateral grip.
-- **Dynamic Camera:** Third-person chase camera with smooth tracking and speed-responsive positioning.
-- **Race Management:** Countdown sequence, race timer, track progress and finish detection.
-- **Game Interface:** Interactive HUD displaying speed, gear, race information and keyboard controls.
-- **Rendering:** Real-time 3D graphics with directional lighting, shadows, tone mapping and atmospheric fog.
-
-## Technology Stack
-
-| Technology | Application |
-|---|---|
-| JavaScript (ES6+) | Core game logic and application development |
-| Three.js | 3D rendering, geometry and scene management |
-| Vite | Development environment and production build |
-| HTML5 | Application structure |
-| CSS3 | Interface styling |
-| Rapier 3D | Physics library dependency |
+- 3D low-poly sports car with steering animation and suspended body motion
+- Closed racing circuit with barriers, grass, trees, and track markings
+- Drift-friendly arcade physics with grip, handbrake slide, and track-boundary clamping
+- Dynamic chase camera with smoothing and speed-responsive framing
+- Proper start menu with car and track selection before the race begins
+- Three distinct car builds with unique proportions, liveries, and aero details
+- A green, flowing Classic circuit and a winding red-rock Canyon route
+- Lap tracking with individual lap times shown at the end of each race
+- Original engine loop and race sound effects for countdown, lap completion, collision, and finish
+- Multiple selectable performance presets and circuit variants
+- Responsive HUD with speed, gear, lap data, and race info
+- Public asset folders for audio, models, textures, and branding assets
 
 ## Controls
 
 | Input | Action |
 |---|---|
 | `W` / `Arrow Up` | Accelerate |
-| `S` / `Arrow Down` | Brake / Reverse |
+| `S` / `Arrow Down` | Brake / reverse |
 | `A` / `Arrow Left` | Steer left |
 | `D` / `Arrow Right` | Steer right |
-| `Space` | Handbrake / Drift |
+| `Space` | Handbrake / drift |
 
-## Project Structure
+## Project structure
 
 ```text
 velocity/
+├── index.html
+├── package.json
+├── README.md
 ├── public/
 │   ├── audio/
+│   │   ├── README.md
+│   │   ├── collision.wav
+│   │   ├── countdown.wav
+│   │   ├── engine-loop.wav
+│   │   ├── finish-fanfare.wav
+│   │   └── lap-chime.wav
+│   ├── favicon.svg
+│   ├── icons.svg
 │   ├── models/
-│   └── textures/
-│
+│   │   └── README.md
+│   ├── textures/
+│   │   └── README.md
+│   └── ...
 ├── src/
+│   ├── assets/
+│   │   ├── hero.png
+│   │   ├── javascript.svg
+│   │   └── vite.svg
+│   ├── audio/
+│   │   └── SoundManager.js
 │   ├── game/
 │   │   ├── Camera.js
 │   │   ├── Car.js
 │   │   ├── Game.js
 │   │   ├── Physics.js
 │   │   └── Track.js
-│   │
 │   ├── ui/
 │   │   └── HUD.js
-│   │
 │   ├── main.js
-│   └── style.css
-│
-├── index.html
-├── package.json
-└── README.md
+│   ├── style.css
+│   └── ...
+└── dist/
 ```
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Node.js
+- Node.js 18+
 - npm
 - Git
 
-### Installation
-
-**1. Clone the repository**
+### Install
 
 ```bash
 git clone https://github.com/krista9669/velocity.git
-```
-
-**2. Navigate to the project directory**
-
-```bash
 cd velocity
-```
-
-**3. Install dependencies**
-
-```bash
 npm install
 ```
 
-**4. Start the development server**
+### Run locally
 
 ```bash
 npm run dev
 ```
 
-**5. Open the application**
-
-Navigate to the local URL displayed by Vite:
+Then open the local Vite URL in your browser, typically:
 
 ```text
 http://localhost:5173
 ```
 
-### Production Build
-
-Generate an optimized production build:
+### Production build
 
 ```bash
 npm run build
-```
-
-Preview the production build locally:
-
-```bash
 npm run preview
 ```
 
-## Architecture
+## Upgrade notes
 
-The application follows a modular architecture that separates rendering, vehicle systems, track generation, game state management and user interface logic.
+This release focuses on a more complete arcade racing flow with a polished menu and progression loop:
 
-| Module | Responsibility |
-|---|---|
-| `Game.js` | Coordinates scene initialization, rendering, game states and the main animation loop. |
-| `Car.js` | Constructs the vehicle model and manages wheel rotation, steering and visual effects. |
-| `Physics.js` | Implements vehicle movement, acceleration, braking, steering, drifting and track boundary handling. |
-| `Track.js` | Generates track geometry, road surfaces, safety barriers and environmental elements. |
-| `Camera.js` | Manages the third-person chase camera and dynamic camera positioning. |
-| `HUD.js` | Handles the game interface, countdown, speedometer, timer and race results. |
-| `main.js` | Application entry point. |
+- proper start menu with vehicle and circuit selection
+- lap tracking with per-race lap times
+- original engine and race sound assets with speed-responsive playback
+- multiple car handling presets and alternate track variants
+- refined HUD and game overlay flow
+- improved lighting and visual feedback on the car body
+- modular track and vehicle systems for easier expansion
+- public asset folders prepared for sounds, models, and textures
+- better local dev hosting settings for browser testing
 
-## Development Roadmap
+## Tech stack
 
-- [x] Three.js scene initialization and rendering pipeline
-- [x] Custom low-poly vehicle model
-- [x] Procedurally generated racing circuit
-- [x] Keyboard-based vehicle controls
-- [x] Arcade-style vehicle movement and handling
-- [x] Handbrake drifting mechanics
-- [x] Third-person chase camera
-- [x] Race countdown and timer
-- [ ] Dynamic braking and reverse-light effects
-- [ ] Enhanced suspension and vehicle feedback
-- [ ] Additional racing circuits
-- [ ] Multiple selectable vehicles
-- [ ] Lap records and best-time tracking
-- [ ] Engine audio and environmental sound effects
-- [ ] Further graphical and performance improvements
+- JavaScript (ES modules)
+- Three.js
+- Vite
+- HTML5 and CSS3
+
+## Roadmap
+
+- [x] Race scene and rendering pipeline
+- [x] Low-poly car model and wheel animation
+- [x] Track generation and barriers
+- [x] Vehicle movement and grip handling
+- [x] Drift / handbrake behavior
+- [x] Chasing camera and race HUD
+- [x] Multiple circuits
+- [x] Car selection
+- [x] Lap timers and race results
+- [x] Sound and engine effects
+- [ ] Additional environmental props and art assets
