@@ -39,6 +39,15 @@ body {
   text-shadow: 0 2px 5px #0008;
 }
 
+.game-hud > :not(.game-overlay) {
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.game-hud.overlay-visible > :not(.game-overlay) {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .hud-top {
   display: flex;
   justify-content: space-between;
@@ -221,31 +230,34 @@ body {
   align-items: center;
   padding: 20px;
   background: linear-gradient(135deg, #101820df, #172c3dcc);
+  overflow-y: auto;
   pointer-events: auto;
 }
 
 .overlay-card {
-  width: min(460px, 100%);
-  padding: 45px 35px;
+  width: min(430px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 26px 26px 22px;
   text-align: center;
   color: white;
-  background: #182630f2;
-  border: 1px solid #ffffff25;
-  border-radius: 12px;
-  box-shadow: 0 25px 80px #0008;
+  background: rgba(14, 24, 32, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
 }
 
 .overlay-brand {
   display: inline-grid;
   place-items: center;
-  width: 55px;
-  height: 55px;
+  width: 46px;
+  height: 46px;
   background: #f5d547;
   color: #101820;
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 900;
   transform: skew(-8deg);
-  margin-bottom: 25px;
+  margin-bottom: 18px;
 }
 
 .overlay-eyebrow {
@@ -255,16 +267,16 @@ body {
 }
 
 .overlay-card h1 {
-  font-size: clamp(35px, 8vw, 52px);
-  letter-spacing: 5px;
-  margin: 10px 0;
+  font-size: clamp(24px, 3vw, 38px);
+  letter-spacing: 3px;
+  margin: 12px 0 8px;
 }
 
 .overlay-card p {
   color: #b9c8d5;
-  font-size: 13px;
-  line-height: 1.7;
-  margin: 15px 0 25px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0 18px;
 }
 
 .overlay-details {
@@ -297,12 +309,115 @@ body {
   transform: translateY(-2px);
 }
 
+.overlay-panel {
+  display: block;
+}
+
+.overlay-panel[hidden] {
+  display: none;
+}
+
+.selector-group {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.selector-label {
+  color: #f5d547;
+  font-size: 10px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.overlay-card .selector-btn {
+  width: 100%;
+  padding: 11px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: #dfeaf3;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.overlay-card .selector-btn:hover {
+  background: rgba(245, 213, 71, 0.12);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.overlay-card .selector-btn.active,
+.overlay-card .selector-btn.active:hover {
+  background: #f5d547;
+  border-color: #f5d547;
+  color: #101820;
+}
+
+.results-laps {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  text-align: left;
+}
+
+.lap-item {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #dce7f3;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+#results-button {
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+  background: #f5d547;
+  color: #101820;
+  padding: 17px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+#results-button:hover {
+  background: #ffe77a;
+  transform: translateY(-2px);
+}
+
 .overlay-help {
   display: block;
   color: #8597a6;
   font-size: 9px;
   letter-spacing: 2px;
-  margin-top: 22px;
+  margin-top: 18px;
+}
+
+#results-title {
+  font-size: clamp(30px, 5vw, 44px);
+  letter-spacing: 1px;
+  line-height: 1;
+  margin: 8px 0 12px;
+}
+
+#results-description {
+  font-size: 14px;
+  color: #dfeaf3;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 600px) {
@@ -336,6 +451,21 @@ body {
   }
 
   .overlay-card {
-    padding: 35px 22px;
+    padding: 24px 20px 20px;
+  }
+}
+
+@media (max-height: 560px) {
+  .game-overlay {
+    align-items: flex-start;
+  }
+
+  .overlay-card {
+    margin: auto;
+    padding-block: 18px;
+  }
+
+  .overlay-brand {
+    display: none;
   }
 }
