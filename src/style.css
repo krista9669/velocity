@@ -1,0 +1,341 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #101820;
+  font-family: Arial, sans-serif;
+}
+
+#game-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.game-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: white;
+  padding: 25px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-shadow: 0 2px 5px #0008;
+}
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  background: #f5d547;
+  color: #151b24;
+  font-size: 24px;
+  font-weight: 900;
+  transform: skew(-8deg);
+}
+
+.hud-brand strong {
+  display: block;
+  font-size: 20px;
+  letter-spacing: 4px;
+}
+
+.hud-brand small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-top: 4px;
+  color: #ffffffaa;
+}
+
+.race-info {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  background: #111b24d9;
+  padding: 14px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+#hud-timer {
+  color: #f5d547;
+  font-variant-numeric: tabular-nums;
+}
+
+.race-progress {
+  position: absolute;
+  top: 100px;
+  left: 30px;
+  right: 30px;
+  height: 5px;
+  background: #ffffff55;
+  overflow: hidden;
+}
+
+#hud-progress-fill {
+  height: 100%;
+  width: 0;
+  background: #f5d547;
+}
+
+.hud-countdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(65px, 12vw, 130px);
+  font-weight: 900;
+  color: #f5d547;
+  text-shadow: 0 5px 25px #0008;
+  pointer-events: none;
+}
+
+.hud-bottom {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.speed-panel {
+  background: #111b24e8;
+  border: 1px solid #ffffff25;
+  padding: 18px 22px;
+  border-radius: 8px;
+  min-width: 190px;
+}
+
+.speed-label {
+  color: #b9c8d5;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
+
+.speed-value {
+  margin-top: 5px;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.speed-value span {
+  font-size: 55px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-value small {
+  font-size: 11px;
+  color: #b9c8d5;
+}
+
+.speed-bar {
+  height: 4px;
+  background: #ffffff25;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+#hud-speed-fill {
+  height: 100%;
+  width: 0;
+  background: #f5d547;
+  transition: width 0.1s;
+}
+
+.gear-panel {
+  background: #111b24e8;
+  padding: 14px 22px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gear-panel small {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #b9c8d5;
+}
+
+.gear-panel strong {
+  font-size: 35px;
+  color: #f5d547;
+}
+
+.hud-controls {
+  position: absolute;
+  right: 30px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: #111b24d9;
+  padding: 15px 18px;
+  border-radius: 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.hud-controls small {
+  color: #f5d547;
+  margin-left: 10px;
+}
+
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #101820df, #172c3dcc);
+  pointer-events: auto;
+}
+
+.overlay-card {
+  width: min(460px, 100%);
+  padding: 45px 35px;
+  text-align: center;
+  color: white;
+  background: #182630f2;
+  border: 1px solid #ffffff25;
+  border-radius: 12px;
+  box-shadow: 0 25px 80px #0008;
+}
+
+.overlay-brand {
+  display: inline-grid;
+  place-items: center;
+  width: 55px;
+  height: 55px;
+  background: #f5d547;
+  color: #101820;
+  font-size: 34px;
+  font-weight: 900;
+  transform: skew(-8deg);
+  margin-bottom: 25px;
+}
+
+.overlay-eyebrow {
+  color: #f5d547;
+  font-size: 10px;
+  letter-spacing: 4px;
+}
+
+.overlay-card h1 {
+  font-size: clamp(35px, 8vw, 52px);
+  letter-spacing: 5px;
+  margin: 10px 0;
+}
+
+.overlay-card p {
+  color: #b9c8d5;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 15px 0 25px;
+}
+
+.overlay-details {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #b9c8d5;
+  margin-bottom: 30px;
+}
+
+.overlay-card button {
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+  background: #f5d547;
+  color: #101820;
+  padding: 17px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.overlay-card button:hover {
+  background: #ffe77a;
+  transform: translateY(-2px);
+}
+
+.overlay-help {
+  display: block;
+  color: #8597a6;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-top: 22px;
+}
+
+@media (max-width: 600px) {
+  .game-hud {
+    padding: 14px;
+  }
+
+  .hud-brand strong {
+    font-size: 15px;
+  }
+
+  .race-info {
+    gap: 10px;
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  .race-progress {
+    top: 75px;
+    left: 14px;
+    right: 14px;
+  }
+
+  .hud-controls {
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .speed-value span {
+    font-size: 40px;
+  }
+
+  .overlay-card {
+    padding: 35px 22px;
+  }
+}
