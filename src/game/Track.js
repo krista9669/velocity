@@ -130,8 +130,8 @@ function createBarrierSupports(curve, offset, sceneGroup) {
 }
 
 // Adds a simple low-poly tree environment.
-function createTrees(sceneGroup) {
-  const treeCount = 36;
+function createTrees(sceneGroup, curve) {
+  const treeCount = 48;
 
   const trunkGeometry = new THREE.CylinderGeometry(
     0.35,
@@ -171,26 +171,28 @@ function createTrees(sceneGroup) {
   const dummy = new THREE.Object3D();
 
   for (let i = 0; i < treeCount; i++) {
-    const angle = (i / treeCount) * Math.PI * 2;
-
-    const radiusX = 94 + (i % 3) * 7;
-    const radiusZ = 94 + (i % 4) * 6;
-
-    const x = Math.cos(angle) * radiusX;
-    const z = Math.sin(angle) * radiusZ;
+    const t = i / treeCount;
+    const point = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t).normalize();
+    const side = new THREE.Vector3()
+      .crossVectors(tangent, UP)
+      .normalize();
+    const sideSign = i % 2 === 0 ? 1 : -1;
+    point.addScaledVector(side, sideSign * (20 + (i % 4) * 5));
 
     const scale = 0.8 + (i % 5) * 0.12;
+    const treeRotation = Math.atan2(tangent.x, tangent.z);
 
-    dummy.position.set(x, 0.7, z);
+    dummy.position.set(point.x, 0.7, point.z);
     dummy.scale.setScalar(scale);
-    dummy.rotation.y = angle;
+    dummy.rotation.y = treeRotation;
     dummy.updateMatrix();
 
     trunks.setMatrixAt(i, dummy.matrix);
 
-    dummy.position.set(x, 4.2 * scale, z);
+    dummy.position.set(point.x, 4.2 * scale, point.z);
     dummy.scale.setScalar(scale);
-    dummy.rotation.y = angle * 1.7;
+    dummy.rotation.y = treeRotation * 1.7;
     dummy.updateMatrix();
 
     leaves.setMatrixAt(i, dummy.matrix);
@@ -202,24 +204,96 @@ function createTrees(sceneGroup) {
   sceneGroup.add(trunks, leaves);
 }
 
-export function createTrack(scene) {
+function createCanyonScenery(sceneGroup, curve) {
+  const rockGeometry = new THREE.DodecahedronGeometry(1, 0);
+  const rockMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 1,
+    flatShading: true,
+  });
+  const rockCount = 48;
+  const rocks = new THREE.InstancedMesh(
+    rockGeometry,
+    rockMaterial,
+    rockCount
+  );
+  const dummy = new THREE.Object3D();
+  const rockColors = [0x9d5038, 0xb66b46, 0x7d4639, 0xc48153];
+
+  for (let i = 0; i < rockCount; i++) {
+    const trackIndex = Math.floor(i / 2);
+    const t = trackIndex / (rockCount / 2);
+    const point = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t).normalize();
+    const side = new THREE.Vector3()
+      .crossVectors(tangent, UP)
+      .normalize();
+    const direction = i % 2 === 0 ? 1 : -1;
+    const distance = 17 + (trackIndex % 4) * 4;
+    const height = 13 + (trackIndex % 5) * 5;
+
+    point.addScaledVector(side, direction * distance);
+    dummy.position.set(point.x, height * 0.38, point.z);
+    dummy.scale.set(
+      7 + (trackIndex % 3) * 3,
+      height,
+      9 + (trackIndex % 4) * 2
+    );
+    dummy.rotation.set(
+      (trackIndex % 3) * 0.04,
+      trackIndex * 1.7,
+      ((trackIndex % 5) - 2) * 0.035
+    );
+    dummy.updateMatrix();
+    rocks.setMatrixAt(i, dummy.matrix);
+    rocks.setColorAt(i, new THREE.Color(rockColors[trackIndex % rockColors.length]));
+  }
+
+  rocks.castShadow = true;
+  rocks.receiveShadow = true;
+  sceneGroup.add(rocks);
+}
+
+export function createTrack(scene, trackName = 'classic') {
   const trackGroup = new THREE.Group();
 
-  // Closed elliptical racing circuit.
-  const points = [
-    new THREE.Vector3(0, 0, 65),
-    new THREE.Vector3(32, 0, 56),
-    new THREE.Vector3(57, 0, 30),
-    new THREE.Vector3(65, 0, 0),
-    new THREE.Vector3(57, 0, -30),
-    new THREE.Vector3(32, 0, -56),
-    new THREE.Vector3(0, 0, -65),
-    new THREE.Vector3(-32, 0, -56),
-    new THREE.Vector3(-57, 0, -30),
-    new THREE.Vector3(-65, 0, 0),
-    new THREE.Vector3(-57, 0, 30),
-    new THREE.Vector3(-32, 0, 56),
-  ];
+  const trackVariants = {
+    classic: [
+      new THREE.Vector3(0, 0, 82),
+      new THREE.Vector3(42, 0, 82),
+      new THREE.Vector3(74, 0, 64),
+      new THREE.Vector3(88, 0, 34),
+      new THREE.Vector3(88, 0, -34),
+      new THREE.Vector3(74, 0, -64),
+      new THREE.Vector3(42, 0, -82),
+      new THREE.Vector3(-42, 0, -82),
+      new THREE.Vector3(-74, 0, -64),
+      new THREE.Vector3(-88, 0, -34),
+      new THREE.Vector3(-88, 0, 34),
+      new THREE.Vector3(-74, 0, 64),
+      new THREE.Vector3(-42, 0, 82),
+    ],
+    canyon: [
+      new THREE.Vector3(0, 0, 78),
+      new THREE.Vector3(48, 0, 72),
+      new THREE.Vector3(78, 0, 48),
+      new THREE.Vector3(70, 0, 20),
+      new THREE.Vector3(42, 0, 8),
+      new THREE.Vector3(28, 0, -14),
+      new THREE.Vector3(58, 0, -42),
+      new THREE.Vector3(48, 0, -72),
+      new THREE.Vector3(16, 0, -82),
+      new THREE.Vector3(-18, 0, -62),
+      new THREE.Vector3(-56, 0, -78),
+      new THREE.Vector3(-82, 0, -48),
+      new THREE.Vector3(-64, 0, -16),
+      new THREE.Vector3(-38, 0, 4),
+      new THREE.Vector3(-46, 0, 34),
+      new THREE.Vector3(-16, 0, 68),
+    ],
+  };
+
+  const points = trackVariants[trackName] || trackVariants.classic;
 
   const curve = new THREE.CatmullRomCurve3(
     points,
@@ -230,26 +304,26 @@ export function createTrack(scene) {
 
   // Materials.
   const roadMaterial = new THREE.MeshStandardMaterial({
-    color: 0x303640,
+    color: trackName === 'canyon' ? 0x514746 : 0x303640,
     roughness: 0.92,
     metalness: 0.02,
     side: THREE.DoubleSide,
   });
 
   const shoulderMaterial = new THREE.MeshStandardMaterial({
-    color: 0x555b63,
+    color: trackName === 'canyon' ? 0x9a6146 : 0x555b63,
     roughness: 1,
     side: THREE.DoubleSide,
   });
 
   const barrierMaterial = new THREE.MeshStandardMaterial({
-    color: 0xd9dce0,
+    color: trackName === 'canyon' ? 0xc2784c : 0xd9dce0,
     roughness: 0.7,
     metalness: 0.05,
   });
 
   const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x56844f,
+    color: trackName === 'canyon' ? 0xb88759 : 0x56844f,
     roughness: 1,
   });
 
@@ -292,7 +366,7 @@ export function createTrack(scene) {
 
   // Clean white road-edge markings.
   const edgeMaterial = new THREE.LineBasicMaterial({
-    color: 0xf2f2f2,
+    color: trackName === 'canyon' ? 0xffc073 : 0xf2f2f2,
   });
 
   trackGroup.add(
@@ -354,8 +428,11 @@ export function createTrack(scene) {
     );
   }
 
-  // Low-poly scenery.
-  createTrees(trackGroup);
+  if (trackName === 'canyon') {
+    createCanyonScenery(trackGroup, curve);
+  } else {
+    createTrees(trackGroup, curve);
+  }
 
   // Starting / finish line.
   const startPoint = curve.getPointAt(0);
@@ -425,5 +502,6 @@ export function createTrack(scene) {
     roadWidth: ROAD_WIDTH,
     startPosition: startPoint.clone(),
     startTangent: startTangent.clone(),
+    name: trackName,
   };
 }

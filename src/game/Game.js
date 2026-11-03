@@ -3,21 +3,27 @@ import * as THREE from 'three';
 
 import { createTrack } from './Track.js';
 import { Car } from './Car.js';
-import { Physics } from './Physics.js';
+import { Physics, CAR_PRESETS } from './Physics.js';
 import { ChaseCamera } from './Camera.js';
 import { HUD } from '../ui/HUD.js';
+import { SoundManager } from '../audio/SoundManager.js';
 
 export class Game {
   constructor(container) {
     this.container = container;
     this.isDisposed = false;
+    this.selectedCar = 'vortex';
+    this.selectedTrack = 'classic';
+    this.totalLaps = 2;
+    this.currentLap = 1;
+    this.completedLaps = 0;
+    this.lapTimes = [];
+    this.sound = new SoundManager();
 
-    // Scene.
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x91c9e8);
     this.scene.fog = new THREE.Fog(0x91c9e8, 180, 450);
 
-    // Camera.
     const width = Math.max(container.clientWidth, 1);
     const height = Math.max(container.clientHeight, 1);
 
@@ -28,64 +34,45 @@ export class Game {
       1000
     );
 
-    // Renderer.
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
     });
 
     this.renderer.setSize(width, height);
-
     this.renderer.setPixelRatio(
       Math.min(window.devicePixelRatio || 1, 2)
     );
-
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
-
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
     this.renderer.setClearColor(0x91c9e8);
 
     container.appendChild(this.renderer.domElement);
 
-    // Lighting and environment.
     this.setupLighting();
+    this.buildWorld();
 
-    // Track.
-    this.track = createTrack(this.scene);
-
-    // Car.
-    this.car = new Car(
-      this.scene,
-      this.track.startPosition.clone()
-    );
-
-    const tangent = this.track.startTangent;
-
-    this.car.setRotation(
-      Math.atan2(-tangent.x, -tangent.z)
-    );
-
-    // Physics and camera.
-    this.physics = new Physics(this.track);
-    this.chaseCamera = new ChaseCamera(this.camera);
-
-    // Game state.
     this.state = 'ready';
     this.countdownRemaining = 0;
     this.raceTime = 0;
     this.previousProgress = 0;
+    this.lastCountdownValue = 0;
+    this.lastLapTime = 0;
+    this.lapStartTime = 0;
 
-    // HUD.
     this.hud = new HUD(container, {
       onStart: () => this.startRace(),
       onRestart: () => this.restartRace(),
+      onCarSelect: car => this.selectCar(car),
+      onTrackSelect: track => this.selectTrack(track),
     });
 
-    // Animation.
+    this.hud.setMenuSelection(this.selectedCar, this.selectedTrack);
+    this.hud.showMenu();
+
     this.clock = new THREE.Clock();
 
     this.handleResize = this.handleResize.bind(this);
@@ -93,101 +80,23 @@ export class Game {
       this.handleVisibilityChange.bind(this);
 
     window.addEventListener('resize', this.handleResize);
-
     document.addEventListener(
       'visibilitychange',
       this.handleVisibilityChange
     );
 
+    this.sound.init();
     this.animate();
   }
 
-  setupLighting() {
-    // Soft overall illumination.
-    const ambientLight = new THREE.AmbientLight(
-      0xffffff,
-      0.8
+  buildWorld() {
+    this.track = createTrack(this.scene, this.selectedTrack);
+
+    this.car = new Car(
+      this.scene,
+      this.track.startPosition.clone(),
+      this.selectedCar
     );
-
-    this.scene.add(ambientLight);
-
-    // Sky and ground illumination.
-    const hemisphereLight = new THREE.HemisphereLight(
-      0xd9efff,
-      0x53634a,
-      1.1
-    );
-
-    this.scene.add(hemisphereLight);
-
-    // Main sunlight.
-    this.sunlight = new THREE.DirectionalLight(
-      0xffffff,
-      2.5
-    );
-
-    this.sunlight.position.set(-45, 90, 55);
-    this.sunlight.castShadow = true;
-
-    this.sunlight.shadow.mapSize.set(2048, 2048);
-
-    this.sunlight.shadow.camera.left = -120;
-    this.sunlight.shadow.camera.right = 120;
-    this.sunlight.shadow.camera.top = 120;
-    this.sunlight.shadow.camera.bottom = -120;
-
-    this.sunlight.shadow.camera.near = 1;
-    this.sunlight.shadow.camera.far = 250;
-
-    this.sunlight.shadow.bias = -0.00015;
-    this.sunlight.shadow.normalBias = 0.03;
-
-    this.sunlight.target.position.set(0, 0, 0);
-
-    this.scene.add(this.sunlight);
-    this.scene.add(this.sunlight.target);
-
-    // Soft fill light to prevent overly dark surfaces.
-    const fillLight = new THREE.DirectionalLight(
-      0xc5dcff,
-      0.55
-    );
-
-    fillLight.position.set(45, 35, -55);
-
-    this.scene.add(fillLight);
-  }
-
-  startRace() {
-    if (this.state !== 'ready') return;
-
-    this.state = 'countdown';
-    this.countdownRemaining = 3;
-    this.raceTime = 0;
-
-    this.previousProgress =
-      this.physics.getTrackProgress(
-        this.car.group.position
-      );
-
-    this.hud.showCountdown(3);
-  }
-
-  restartRace() {
-    // Reset physics.
-    this.physics.velocity.set(0, 0, 0);
-    this.physics.speed = 0;
-    this.physics.currentSteering = 0;
-    this.physics.steeringInput = 0;
-    this.physics.isColliding = false;
-    this.physics.keys.clear();
-
-    // Reset car position and orientation.
-    this.car.setPosition(
-      this.track.startPosition.clone()
-    );
-
-    this.car.group.rotation.set(0, 0, 0);
 
     const tangent = this.track.startTangent;
 
@@ -195,43 +104,199 @@ export class Game {
       Math.atan2(-tangent.x, -tangent.z)
     );
 
-    // Reset visual car effects.
-    this.car.steeringAngle = 0;
-    this.car.bodyRoll = 0;
-    this.car.bodyPitch = 0;
-    this.car.suspensionTime = 0;
+    this.physics = new Physics(
+      this.track,
+      this.selectedCar
+    );
 
-    this.car.bodyGroup.rotation.set(0, 0, 0);
-    this.car.bodyGroup.position.set(0, 0, 0);
+    this.chaseCamera = new ChaseCamera(this.camera);
+  }
 
-    this.car.wheels.forEach(wheel => {
-      wheel.steeringPivot.rotation.set(0, 0, 0);
-      wheel.spinGroup.rotation.set(0, 0, 0);
-    });
+  selectCar(carName) {
+    if (!CAR_PRESETS[carName]) return;
 
-    // Reset camera.
+    this.selectedCar = carName;
+    this.hud.setMenuSelection(
+      this.selectedCar,
+      this.selectedTrack
+    );
+
+    if (this.state === 'ready') {
+      this.rebuildWorld();
+    }
+  }
+
+  selectTrack(trackName) {
+    if (!['classic', 'canyon'].includes(trackName)) return;
+
+    this.selectedTrack = trackName;
+    this.hud.setMenuSelection(
+      this.selectedCar,
+      this.selectedTrack
+    );
+
+    if (this.state === 'ready') {
+      this.rebuildWorld();
+    }
+  }
+
+  rebuildWorld() {
+    if (this.track?.group) {
+      this.scene.remove(this.track.group);
+      this.track.group.traverse(object => {
+        if (object.geometry) {
+          object.geometry.dispose();
+        }
+
+        if (object.material) {
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+
+          materials.forEach(material => material.dispose());
+        }
+      });
+    }
+
+    if (this.car) {
+      this.car.dispose();
+    }
+
+    if (this.physics) {
+      this.physics.dispose();
+    }
+
+    this.buildWorld();
+
+    if (this.hud) {
+      this.hud.setMenuSelection(
+        this.selectedCar,
+        this.selectedTrack
+      );
+    }
+
+    this.resetRaceState();
+  }
+
+  resetRaceState() {
+    this.raceTime = 0;
+    this.countdownRemaining = 0;
+    this.previousProgress = 0;
+    this.currentLap = 1;
+    this.completedLaps = 0;
+    this.lapTimes = [];
+    this.lastCountdownValue = 0;
+    this.lapStartTime = 0;
+
+    this.state = 'ready';
+
+    if (this.physics && this.car) {
+      this.physics.velocity.set(0, 0, 0);
+      this.physics.speed = 0;
+      this.physics.currentSteering = 0;
+      this.physics.steeringInput = 0;
+      this.physics.isColliding = false;
+      this.physics.keys.clear();
+
+      this.car.setPosition(
+        this.track.startPosition.clone()
+      );
+
+      this.car.group.rotation.set(0, 0, 0);
+      const tangent = this.track.startTangent;
+      this.car.setRotation(
+        Math.atan2(-tangent.x, -tangent.z)
+      );
+
+      this.car.steeringAngle = 0;
+      this.car.bodyRoll = 0;
+      this.car.bodyPitch = 0;
+      this.car.suspensionTime = 0;
+      this.car.bodyGroup.rotation.set(0, 0, 0);
+      this.car.bodyGroup.position.set(0, 0, 0);
+
+      this.car.wheels.forEach(wheel => {
+        wheel.steeringPivot.rotation.set(0, 0, 0);
+        wheel.spinGroup.rotation.set(0, 0, 0);
+      });
+    }
+
     this.chaseCamera.initialized = false;
     this.chaseCamera.currentSpeed = 0;
     this.chaseCamera.steeringEffect = 0;
 
-    // Reset race.
-    this.raceTime = 0;
-    this.countdownRemaining = 0;
-    this.previousProgress = 0;
-
-    this.state = 'ready';
-
     this.clock.getDelta();
+    this.hud.showMenu();
+  }
 
-    this.hud.showStart();
+  setupLighting() {
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    this.scene.add(ambientLight);
+
+    const hemisphereLight = new THREE.HemisphereLight(
+      0xd9efff,
+      0x53634a,
+      1.1
+    );
+    this.scene.add(hemisphereLight);
+
+    this.sunlight = new THREE.DirectionalLight(0xffffff, 2.5);
+    this.sunlight.position.set(-45, 90, 55);
+    this.sunlight.castShadow = true;
+    this.sunlight.shadow.mapSize.set(2048, 2048);
+    this.sunlight.shadow.camera.left = -120;
+    this.sunlight.shadow.camera.right = 120;
+    this.sunlight.shadow.camera.top = 120;
+    this.sunlight.shadow.camera.bottom = -120;
+    this.sunlight.shadow.camera.near = 1;
+    this.sunlight.shadow.camera.far = 250;
+    this.sunlight.shadow.bias = -0.00015;
+    this.sunlight.shadow.normalBias = 0.03;
+    this.sunlight.target.position.set(0, 0, 0);
+    this.scene.add(this.sunlight);
+    this.scene.add(this.sunlight.target);
+
+    const fillLight = new THREE.DirectionalLight(0xc5dcff, 0.55);
+    fillLight.position.set(45, 35, -55);
+    this.scene.add(fillLight);
+  }
+
+  startRace() {
+    if (this.state !== 'ready') return;
+
+    this.sound.ensureReady();
+    this.state = 'countdown';
+    this.countdownRemaining = 3;
+    this.raceTime = 0;
+    this.lapTimes = [];
+    this.completedLaps = 0;
+    this.currentLap = 1;
+    this.lapStartTime = 0;
+    this.previousProgress =
+      this.physics.getTrackProgress(
+        this.car.group.position
+      );
+
+    this.hud.showCountdown(3);
+    this.lastCountdownValue = 3;
+  }
+
+  restartRace() {
+    this.resetRaceState();
   }
 
   finishRace() {
     if (this.state !== 'racing') return;
 
     this.state = 'finished';
+    this.sound.playFinishTone();
 
-    this.hud.showResults(this.raceTime);
+    this.hud.showResults(
+      this.raceTime,
+      this.lapTimes,
+      this.selectedCar,
+      this.selectedTrack
+    );
   }
 
   handleResize() {
@@ -244,16 +309,13 @@ export class Game {
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-
     this.renderer.setSize(width, height);
-
     this.renderer.setPixelRatio(
       Math.min(window.devicePixelRatio || 1, 2)
     );
   }
 
   handleVisibilityChange() {
-    // Avoid a large delta-time jump when returning to the game.
     this.clock.getDelta();
   }
 
@@ -278,23 +340,24 @@ export class Game {
       ),
     };
 
-    // Countdown.
     if (this.state === 'countdown') {
       this.countdownRemaining -= deltaTime;
+      const number = Math.ceil(this.countdownRemaining);
 
-      const number = Math.ceil(
-        this.countdownRemaining
-      );
+      if (number > 0 && number !== this.lastCountdownValue) {
+        this.lastCountdownValue = number;
+        this.sound.playCountdownTone(number);
+      }
 
       if (number > 0) {
         this.hud.showCountdown(number);
       } else {
         this.state = 'racing';
         this.hud.hideCountdown();
+        this.sound.playCountdownTone(1);
       }
     }
 
-    // Active race.
     if (this.state === 'racing') {
       this.raceTime += deltaTime;
 
@@ -303,52 +366,65 @@ export class Game {
         deltaTime
       );
 
-      // Detect crossing the start/finish line.
+      if (this.physics.isColliding && this.physics.speed > 3) {
+        this.sound.playCollisionTone();
+      }
+
       const crossedFinish =
         this.previousProgress > 0.85 &&
         driving.progress < 0.15;
 
       if (crossedFinish && this.raceTime > 8) {
-        this.finishRace();
+        const lapTime = this.raceTime - this.lapStartTime;
+        this.lapTimes.push(lapTime);
+        this.completedLaps += 1;
+        this.currentLap = this.completedLaps + 1;
+        this.sound.playLapTone();
+        this.lapStartTime = this.raceTime;
+
+        if (this.completedLaps >= this.totalLaps) {
+          this.finishRace();
+        }
       }
 
       this.previousProgress = driving.progress;
     }
 
-    // Update car visuals.
     this.car.update(
       deltaTime,
       driving.speed,
       driving.steering
     );
 
-    // Update camera.
     this.chaseCamera.update(
       this.car,
       deltaTime
     );
 
-    // Update HUD.
+    this.sound.setEngineState(
+      Math.abs(driving.speed),
+      this.state === 'racing' && this.physics.isPressed('w', 'arrowup'),
+      this.state === 'racing' || this.state === 'countdown'
+    );
+
     this.hud.update(
       driving.speed,
       this.physics.maxSpeed,
       this.raceTime,
       driving.progress,
-      this.state
+      this.state,
+      this.currentLap,
+      this.totalLaps,
+      this.completedLaps
     );
 
-    // Render.
-    this.renderer.render(
-      this.scene,
-      this.camera
-    );
+    this.renderer.render(this.scene, this.camera);
   }
 
   dispose() {
     if (this.isDisposed) return;
 
     this.isDisposed = true;
-
     cancelAnimationFrame(this.animationId);
 
     window.removeEventListener(
@@ -362,10 +438,10 @@ export class Game {
     );
 
     this.physics.dispose();
+    this.sound.dispose();
     this.hud.dispose();
     this.car.dispose();
 
-    // Dispose track resources.
     this.track.group.traverse(object => {
       if (object.geometry) {
         object.geometry.dispose();
@@ -382,7 +458,6 @@ export class Game {
       }
     });
 
-    // Dispose scene lighting resources.
     this.renderer.dispose();
 
     if (this.renderer.domElement.parentElement) {
