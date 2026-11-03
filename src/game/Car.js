@@ -1,9 +1,52 @@
 
 import * as THREE from 'three';
 
+const CAR_STYLES = {
+  vortex: {
+    bodyColor: 0xd92336,
+    bodyDarkColor: 0x921b29,
+    accentColor: 0xff523f,
+    bodyScale: [1, 1, 1],
+    roofScale: [1, 1, 1],
+    wheelTrack: 1,
+    wheelBase: 1,
+    wheelRadius: 0.48,
+    spoilerWidth: 1.85,
+    spoilerY: 1.3,
+    spoilerSupportHeight: 0.38,
+  },
+  thunder: {
+    bodyColor: 0xffa51e,
+    bodyDarkColor: 0xa94e12,
+    accentColor: 0xffe26b,
+    bodyScale: [1.08, 1.08, 1.04],
+    roofScale: [1.08, 1.12, 1.04],
+    wheelTrack: 1.08,
+    wheelBase: 1.04,
+    wheelRadius: 0.52,
+    spoilerWidth: 2.05,
+    spoilerY: 1.34,
+    spoilerSupportHeight: 0.34,
+  },
+  apex: {
+    bodyColor: 0x16c6d5,
+    bodyDarkColor: 0x087687,
+    accentColor: 0x8cfff3,
+    bodyScale: [0.94, 0.78, 1.14],
+    roofScale: [0.82, 0.7, 1.08],
+    wheelTrack: 0.98,
+    wheelBase: 1.1,
+    wheelRadius: 0.44,
+    spoilerWidth: 2.15,
+    spoilerY: 1.53,
+    spoilerSupportHeight: 0.58,
+  },
+};
+
 export class Car {
-  constructor(scene, position = new THREE.Vector3()) {
+  constructor(scene, position = new THREE.Vector3(), carName = 'vortex') {
     this.scene = scene;
+    this.style = CAR_STYLES[carName] || CAR_STYLES.vortex;
     this.group = new THREE.Group();
 
     // Visual body is separate from the physics root.
@@ -12,9 +55,12 @@ export class Car {
 
     this.wheels = [];
     this.frontWheels = [];
+    this.headlights = [];
+    this.brakeLights = [];
 
     this.steeringAngle = 0;
-    this.wheelRadius = 0.48;
+    this.wheelRadius = this.style.wheelRadius;
+    this.bodyGroup.scale.set(...this.style.bodyScale);
 
     this.suspensionTime = 0;
     this.bodyRoll = 0;
@@ -36,13 +82,13 @@ export class Car {
   createMaterials() {
     this.materials = {
       body: new THREE.MeshStandardMaterial({
-        color: 0xd92336,
+        color: this.style.bodyColor,
         metalness: 0.55,
         roughness: 0.28,
       }),
 
       bodyDark: new THREE.MeshStandardMaterial({
-        color: 0x921b29,
+        color: this.style.bodyDarkColor,
         metalness: 0.35,
         roughness: 0.35,
       }),
@@ -99,6 +145,12 @@ export class Car {
         color: 0x080b10,
         roughness: 0.9,
       }),
+
+      accent: new THREE.MeshStandardMaterial({
+        color: this.style.accentColor,
+        metalness: 0.42,
+        roughness: 0.32,
+      }),
     };
   }
 
@@ -121,19 +173,35 @@ export class Car {
   }
 
   createBody() {
+    const isApex = this.style === CAR_STYLES.apex;
+
     // Main chassis.
     this.createBox(
-      1.9, 0.48, 4.2,
+      isApex ? 1.72 : 1.9, 0.48, isApex ? 4.35 : 4.2,
       this.materials.body,
       [0, 0.65, 0]
     );
 
     // Front hood.
     this.createBox(
-      1.84, 0.24, 1.3,
+      isApex ? 1.35 : 1.84,
+      isApex ? 0.16 : 0.24,
+      isApex ? 1.55 : 1.3,
       this.materials.body,
-      [0, 0.96, -1.35]
+      [0, isApex ? 0.91 : 0.96, isApex ? -1.38 : -1.35]
     );
+
+    if (isApex) {
+      const nose = new THREE.Mesh(
+        new THREE.ConeGeometry(0.78, 1.55, 4),
+        this.materials.body
+      );
+      nose.rotation.x = -Math.PI / 2;
+      nose.position.set(0, 0.74, -1.8);
+      nose.castShadow = true;
+      nose.receiveShadow = true;
+      this.bodyGroup.add(nose);
+    }
 
     // Rear engine cover.
     this.createBox(
@@ -144,9 +212,9 @@ export class Car {
 
     // Front and rear lower bumpers.
     this.createBox(
-      1.95, 0.2, 0.2,
+      isApex ? 1.5 : 1.95, 0.2, 0.2,
       this.materials.dark,
-      [0, 0.52, -2.12]
+      [0, 0.52, isApex ? -2.28 : -2.12]
     );
 
     this.createBox(
@@ -196,34 +264,45 @@ export class Car {
   }
 
   createCabin() {
+    const isApex = this.style === CAR_STYLES.apex;
+
     // Cabin base.
     this.createBox(
-      1.55, 0.15, 1.85,
+      isApex ? 1.12 : 1.55,
+      0.15,
+      isApex ? 1.45 : 1.85,
       this.materials.body,
-      [0, 1.12, 0.05]
+      [0, isApex ? 1.02 : 1.12, isApex ? 0.18 : 0.05]
     );
 
     // Roof.
-    this.createBox(
-      1.45, 0.12, 1.15,
+    const roof = this.createBox(
+      isApex ? 0.92 : 1.45,
+      0.12,
+      isApex ? 0.95 : 1.15,
       this.materials.body,
-      [0, 1.85, 0.15]
+      [0, isApex ? 1.53 : 1.85, 0.15]
     );
+    roof.scale.set(...this.style.roofScale);
 
     // Windshield.
     const windshield = this.createBox(
-      1.35, 0.68, 0.07,
+      isApex ? 0.84 : 1.35,
+      isApex ? 0.43 : 0.68,
+      0.07,
       this.materials.glass,
-      [0, 1.49, -0.57]
+      [0, isApex ? 1.29 : 1.49, isApex ? -0.38 : -0.57]
     );
 
     windshield.rotation.x = -0.25;
 
     // Rear window.
     const rearWindow = this.createBox(
-      1.35, 0.62, 0.07,
+      isApex ? 0.84 : 1.35,
+      isApex ? 0.4 : 0.62,
+      0.07,
       this.materials.glass,
-      [0, 1.48, 0.82]
+      [0, isApex ? 1.28 : 1.48, isApex ? 0.69 : 0.82]
     );
 
     rearWindow.rotation.x = 0.25;
@@ -231,39 +310,41 @@ export class Car {
     // Side windows.
     for (const side of [-1, 1]) {
       this.createBox(
-        0.06, 0.48, 1.05,
+        isApex ? 0.045 : 0.06,
+        isApex ? 0.34 : 0.48,
+        isApex ? 0.82 : 1.05,
         this.materials.glass,
-        [side * 0.78, 1.48, 0.12]
+        [side * (isApex ? 0.55 : 0.78), isApex ? 1.27 : 1.48, 0.12]
       );
 
       // Window pillars.
       this.createBox(
-        0.08, 0.55, 0.09,
+        0.08, isApex ? 0.38 : 0.55, 0.09,
         this.materials.bodyDark,
-        [side * 0.76, 1.48, -0.52]
+        [side * (isApex ? 0.54 : 0.76), isApex ? 1.28 : 1.48, isApex ? -0.34 : -0.52]
       );
 
       this.createBox(
-        0.08, 0.55, 0.09,
+        0.08, isApex ? 0.38 : 0.55, 0.09,
         this.materials.bodyDark,
-        [side * 0.76, 1.48, 0.78]
+        [side * (isApex ? 0.54 : 0.76), isApex ? 1.28 : 1.48, isApex ? 0.69 : 0.78]
       );
     }
 
     // Roof detail.
     this.createBox(
-      0.12, 0.025, 1.12,
+      0.12, 0.025, isApex ? 0.9 : 1.12,
       this.materials.bodyDark,
-      [0, 1.92, 0.15]
+      [0, isApex ? 1.6 : 1.92, 0.15]
     );
   }
 
   createWheels() {
     const positions = [
-      [-1.02, 0.48, -1.35],
-      [1.02, 0.48, -1.35],
-      [-1.02, 0.48, 1.35],
-      [1.02, 0.48, 1.35],
+      [-1.02 * this.style.wheelTrack, 0.48, -1.35 * this.style.wheelBase],
+      [1.02 * this.style.wheelTrack, 0.48, -1.35 * this.style.wheelBase],
+      [-1.02 * this.style.wheelTrack, 0.48, 1.35 * this.style.wheelBase],
+      [1.02 * this.style.wheelTrack, 0.48, 1.35 * this.style.wheelBase],
     ];
 
     positions.forEach(([x, y, z], index) => {
@@ -377,18 +458,20 @@ export class Car {
   createLights() {
     for (const side of [-1, 1]) {
       // Headlights.
-      this.createBox(
+      const headlight = this.createBox(
         0.48, 0.14, 0.08,
         this.materials.headlight,
         [side * 0.58, 0.82, -2.13]
       );
+      this.headlights.push(headlight);
 
       // Rear lights.
-      this.createBox(
+      const brakeLight = this.createBox(
         0.48, 0.15, 0.08,
         this.materials.brakeLight,
         [side * 0.58, 0.85, 2.13]
       );
+      this.brakeLights.push(brakeLight);
 
       // Side indicators.
       this.createBox(
@@ -400,19 +483,20 @@ export class Car {
   }
 
   createDetails() {
-    // Rear spoiler.
+    const spoilerY = this.style.spoilerY;
+    const supportHeight = this.style.spoilerSupportHeight;
+
     this.createBox(
-      1.85, 0.1, 0.28,
+      this.style.spoilerWidth, 0.1, 0.28,
       this.materials.dark,
-      [0, 1.3, 1.95]
+      [0, spoilerY, 1.95]
     );
 
-    // Spoiler supports.
     for (const side of [-1, 1]) {
       this.createBox(
-        0.1, 0.38, 0.1,
+        0.1, supportHeight, 0.1,
         this.materials.dark,
-        [side * 0.65, 1.12, 1.95]
+        [side * 0.65, spoilerY - supportHeight / 2 + 0.04, 1.95]
       );
 
       // Side mirrors.
@@ -455,6 +539,32 @@ export class Car {
         0.34, 0.12, 0.04,
         this.materials.dark,
         [side * 0.68, 0.57, -2.22]
+      );
+    }
+
+    if (this.style === CAR_STYLES.thunder) {
+      for (const side of [-1, 1]) {
+        this.createBox(
+          0.14, 0.025, 0.9,
+          this.materials.accent,
+          [side * 0.28, 1.095, -1.35]
+        );
+        this.createBox(
+          0.28, 0.25, 1.2,
+          this.materials.bodyDark,
+          [side * 0.84, 0.88, -1.15]
+        );
+      }
+    } else if (this.style === CAR_STYLES.apex) {
+      this.createBox(
+        0.18, 0.035, 1.5,
+        this.materials.accent,
+        [0, 1.065, -1.3]
+      );
+      this.createBox(
+        2.2, 0.08, 0.42,
+        this.materials.accent,
+        [0, 0.43, -2.13]
       );
     }
   }
@@ -520,6 +630,19 @@ export class Car {
 
     this.bodyPitch +=
       (targetPitch - this.bodyPitch) * bodySmoothing;
+
+    const headlightIntensity = 1.2 + Math.min(Math.abs(speed) / 40, 1) * 1.6;
+    this.headlights.forEach(light => {
+      light.material.emissiveIntensity = headlightIntensity;
+    });
+
+    const brakeIntensity = speed < -0.5
+      ? 3.2
+      : 0.8 + Math.max(0, 18 - Math.abs(speed)) * 0.08;
+
+    this.brakeLights.forEach(light => {
+      light.material.emissiveIntensity = brakeIntensity;
+    });
 
     this.bodyGroup.rotation.z = this.bodyRoll;
     this.bodyGroup.rotation.x = this.bodyPitch;

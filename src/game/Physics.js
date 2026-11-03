@@ -1,23 +1,43 @@
 
 import * as THREE from 'three';
 
+export const CAR_PRESETS = {
+  vortex: {
+    maxSpeed: 38,
+    acceleration: 17,
+    braking: 32,
+    reverseAcceleration: 9,
+    turnSpeed: 1.65,
+    grip: 8,
+    driftGrip: 1.8,
+    maxReverseSpeed: 10,
+  },
+  thunder: {
+    maxSpeed: 34,
+    acceleration: 15,
+    braking: 28,
+    reverseAcceleration: 8,
+    turnSpeed: 1.5,
+    grip: 7.2,
+    driftGrip: 1.7,
+    maxReverseSpeed: 9,
+  },
+  apex: {
+    maxSpeed: 42,
+    acceleration: 19,
+    braking: 34,
+    reverseAcceleration: 10,
+    turnSpeed: 1.85,
+    grip: 8.7,
+    driftGrip: 1.9,
+    maxReverseSpeed: 11,
+  },
+};
+
 export class Physics {
-  constructor(track) {
+  constructor(track, carPreset = 'vortex') {
     this.track = track;
-
-    // Vehicle performance.
-    this.maxSpeed = 38;
-    this.maxReverseSpeed = 10;
-
-    this.acceleration = 17;
-    this.braking = 32;
-    this.reverseAcceleration = 9;
-    this.rollingResistance = 1.15;
-
-    // Handling.
-    this.turnSpeed = 1.65;
-    this.grip = 8;
-    this.driftGrip = 1.8;
+    this.applyPreset(carPreset);
 
     // Vehicle state.
     this.speed = 0;
@@ -59,6 +79,20 @@ export class Physics {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('blur', this.handleBlur);
+  }
+
+  applyPreset(carPreset = 'vortex') {
+    const preset = CAR_PRESETS[carPreset] || CAR_PRESETS.vortex;
+
+    this.maxSpeed = preset.maxSpeed;
+    this.maxReverseSpeed = preset.maxReverseSpeed;
+    this.acceleration = preset.acceleration;
+    this.braking = preset.braking;
+    this.reverseAcceleration = preset.reverseAcceleration;
+    this.turnSpeed = preset.turnSpeed;
+    this.grip = preset.grip;
+    this.driftGrip = preset.driftGrip;
+    this.rollingResistance = 1.15;
   }
 
   handleKeyDown(event) {
